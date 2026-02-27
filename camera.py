@@ -90,7 +90,7 @@ class camera:
             cv2.aruco.drawDetectedMarkers(img, corners, ids)
             rvec, tvec, _ = self.my_estimatePoseSingleMarkers(corners, self.markerSize)
             time.sleep(1e-4) #can get rid of this maybe
-            return np.array(rvec), np.array(tvec)
+            return np.array(rvec), np.array(tvec), ids
         return None
 
     def rvecToMat(self, rvec):
@@ -108,12 +108,13 @@ class camera:
         img = self.getImg()
         vecs = self.poseEstimate(img)
         if(vecs is not None):
-            rvec, tvec = vecs
+            rvec, tvec, ids = vecs
+            print('Tag found with id:', ids)
             mat = self.createTransformationMatrix(rvec, tvec)
             x = mat[0][3]; y = mat[1][3]; z = mat[2][3]
             rot = mat[0:2][0:2]
             # print(mat)
-            return x, y, z, rot #in mm
+            return x, y, z, rot, rvec #in mm
         else:
             print("No tag detected")
             return None

@@ -120,6 +120,23 @@ class Robot:
             print("No response received")
             return None
     
+    def grabCompass(self):
+        self.robot.mav.command_long_send(
+        self.robot.target_system,
+        self.robot.target_component,
+        mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE,
+        0,
+        74,
+        0, 0, 0, 0, 0, 0
+    )
+        msg = self.robot.recv_match( type = "VFR_HUD", blocking = True)
+        if msg is None:
+            return None
+        else:
+            msg.heading
+        
+    
+    
     def updateVelocities(self):
         xacc, yacc, zacc = self.grabIMU()
         self.xVel += xacc; self.yVel += yacc; self.zVel += zacc

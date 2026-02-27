@@ -34,7 +34,7 @@ cam = camera.camera()
 cam.loadCameraSettings()
 rov.calibrateDepth()
 
-# while(1):
+# # while(1):
 #     rov.grabDepth()
 #     time.sleep(0.5)
 
@@ -49,32 +49,41 @@ yawTarget = 90
 fwdPWM = 0
 
 
-x= 0; y= 0; z= 10
+x= 0; y= 0; z= 50
+rot = 0; rvec = 0
 headingTarg = 90
 rollTarg = 0
 tol = 2
-tf = 30
+tf = 100
 t0 = time.monotonic()
 # rov.disarmRobot()
 
-lastPositions = deque()
-lastPositions.maxlen = 1000
+# lastPositions = deque()
+# lastPositions.maxlen = 1000
+
+# knownTag = (0 , 0 , 0)
 
 
-xPID = PID.PID(kp=-3e-1, ki=0, kd= -1e-5, target=xtarg)
-yPID = PID.PID(kp=1e-1, ki=0, kd= 0, target=yTarg)
-zPID = PID.PID(kp=1e-1, ki= 0, kd= 0, target=zTarg)
-yawPID = PID.PID(kp=1.2, ki= 0, kd= 1.2, target=yawTarget, pwm_min=1420, pwm_max=1580)
+xPID = PID.PID(kp=-3e-1, ki=0, kd= -1e-5, target=xtarg, pwm_min=1400, pwm_max=1600)
+yPID = PID.PID(kp=5e-1, ki=0, kd= 0, target=yTarg, pwm_min= 1400, pwm_max=1600)
+zPID = PID.PID(kp=-1e-1, ki= 0, kd= 0, target=zTarg, pwm_min=1400, pwm_max=1600)
+yawPID = PID.PID(kp=1.2, ki= 0, kd= 1.2, target=yawTarget, pwm_min=1400, pwm_max=1600)
 
-u = []
-ref = []
-times = []
-pos = []
+# u = np.empty(shape=1)
+# ref = np.empty(shape=1)
+# times = np.empty(shape=1)
+# pos = np.empty(shape=1)
 
+# def updateArrs(r, p, utx ,t):
+#     ref.append(r)
+#     pos.append(p)
+#     u.append(utx)
+#     times.append(t)
 
 STATUS = 'INIT'
 
-while((time.monotonic() - t0) < tf):
+while(1):
+    time.sleep(1)
     match(STATUS):
         case 'INIT':
             cam.startStream()
@@ -89,17 +98,31 @@ while((time.monotonic() - t0) < tf):
         case 'SEARCH':
             pos = cam.getPos()
             if(pos is not None):
-                x, y, z, rot = pos
-                lastPositions.appendleft(pos[0:2])
+                x, y, z, rot, rvec = pos
+                # lastPositions.appendleft(pos[0:2])
+                # knownTag = x, y ,z
             STATUS = 'APPROACH'
         case 'APPROACH':
+
             pos = cam.getPos()
             if(pos is not None):
-                x, y, z, rot = pos #this will be in the same units as the marker size in camera class
-            angle = np.rad2deg(np.atan2(z, x))
-            b = yawPID.update(angle)
-            updateArrs(headingTarg, angle, b, time.monotonic()-t0)
-            rov.turn(b)
+                x, y, z, rot, rvec = pos #this will be in the same units as the marker size in camera class
+                knownTag = x, y ,z
+                # lastPositions.appendleft(pos[0:2])
+            compass = rov.grabCompass()
+            # print("compass:", compass)
+            print("rot", rot)
+            print("rvec", np.linalg.norm(rvec))
+            print("rvec", rvec)
+            
+            # angle = np.rad2deg(np.atan2(z, x)) 
+            # headingOut = yawPID.update(angle)
+            # vertOut = yPID.update(y)
+            # fwdOut = zPID.update(z)
+            # strafeOut = xPID.update(x)
+            # fwdOut = zPID.update(z)
+            # updateArrs(headingTarg, angle, b, time.monotonic()-t0)
+            # rov.turn(headingOut); rov.goVertical(vertOut); rov.goForward(fwdOut)
             STATUS = STATUS
         case 'ALIGN':
             STATUS = 'ATTACH'
@@ -113,15 +136,11 @@ rov.disarmRobot()
 cam.release()
 
 
-def updateArrs(r, p, utx ,t):
-    ref.append(r)
-    pos.append(p)
-    u.append(utx)
-    times.append(t)
 
 
-plt.plot(times, ref)
-plt.plot(u)
-plt.plot(pos)
-plt.show()
+
+# plt.plot(times, ref)
+# plt.plot(u)
+# plt.plot(pos)
+# plt.show()
 
