@@ -79,6 +79,9 @@ class camera:
 
 
     def poseEstimate(self, img):
+        rvecCollection = np.empty(0)
+        tvecCollection = np.empty(0)
+
         dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_APRILTAG_36H11)
         params = cv2.aruco.DetectorParameters()
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -87,10 +90,13 @@ class camera:
         corners, ids, rejected = detector.detectMarkers(gray)
 
         if ids is not None:
-            cv2.aruco.drawDetectedMarkers(img, corners, ids)
-            rvec, tvec, _ = self.my_estimatePoseSingleMarkers(corners, self.markerSize)
-            time.sleep(1e-4) #can get rid of this maybe
-            return np.array(rvec), np.array(tvec), ids
+            for id in ids:
+                cv2.aruco.drawDetectedMarkers(img, corners, ids)
+                rvec, tvec, _ = self.my_estimatePoseSingleMarkers(corners, self.markerSize)
+                rvecCollection.append(rvec)
+                tvecCollection.append(tvec)
+                time.sleep(1e-4) #can get rid of this maybe
+            return np.array(rvecCollection), np.array(rvecCollection), ids
         return None
 
     def rvecToMat(self, rvec):
@@ -107,6 +113,7 @@ class camera:
     def getPos(self):
         img = self.getImg()
         vecs = self.poseEstimate(img)
+        vecs = vecs[0]
         if(vecs is not None):
             rvec, tvec, ids = vecs
             print('Tag found with id:', ids)

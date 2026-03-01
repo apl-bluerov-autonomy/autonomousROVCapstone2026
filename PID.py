@@ -24,6 +24,19 @@ class PID:
     def updateTarget(self, target):
         self.target = target
     
+    def getPWM(self):
+        return int(self.pwm)
+    
+    def scaleDown(self):
+        if(self.pwm > 1500):
+            self.pwm = self.pwm + 10
+        elif(self.pwm < 1500):
+            self.pwm = self.pwm - 10 #def a better way to do this (like dif between self.pwm and 1500 when close to 1500)
+        else:
+            self.pwm = self.pwm
+
+
+
     def updateTol(self, tol):
         self.tol = tol
 

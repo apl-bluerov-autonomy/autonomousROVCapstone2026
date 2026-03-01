@@ -69,6 +69,8 @@ yPID = PID.PID(kp=5e-1, ki=0, kd= 0, target=yTarg, pwm_min= 1400, pwm_max=1600)
 zPID = PID.PID(kp=-1e-1, ki= 0, kd= 0, target=zTarg, pwm_min=1400, pwm_max=1600)
 yawPID = PID.PID(kp=1.2, ki= 0, kd= 1.2, target=yawTarget, pwm_min=1400, pwm_max=1600)
 
+pids = [xPID, yPID, zPID, yawPID]
+
 # u = np.empty(shape=1)
 # ref = np.empty(shape=1)
 # times = np.empty(shape=1)
@@ -108,21 +110,19 @@ while(1):
             if(pos is not None):
                 x, y, z, rot, rvec = pos #this will be in the same units as the marker size in camera class
                 knownTag = x, y ,z
-                # lastPositions.appendleft(pos[0:2])
-            compass = rov.grabCompass()
-            # print("compass:", compass)
-            print("rot", rot)
-            print("rvec", np.linalg.norm(rvec))
-            print("rvec", rvec)
+
+                strafeOut = xPID.update(x)
+                vertOut = yPID.update(y)
+                fwdOut = zPID.update(z)
+
+                angle = np.rad2deg(np.atan2(z, x)) 
+                headingOut = yawPID.update(angle)
+
+            else:
+                for c in pids:
+                    c.scaleDown()
+            rov.turn(headingOut); rov.goVertical(vertOut); rov.goForward(fwdOut);
             
-            # angle = np.rad2deg(np.atan2(z, x)) 
-            # headingOut = yawPID.update(angle)
-            # vertOut = yPID.update(y)
-            # fwdOut = zPID.update(z)
-            # strafeOut = xPID.update(x)
-            # fwdOut = zPID.update(z)
-            # updateArrs(headingTarg, angle, b, time.monotonic()-t0)
-            # rov.turn(headingOut); rov.goVertical(vertOut); rov.goForward(fwdOut)
             STATUS = STATUS
         case 'ALIGN':
             STATUS = 'ATTACH'
