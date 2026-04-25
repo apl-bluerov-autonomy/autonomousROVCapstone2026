@@ -15,7 +15,7 @@ def captureImages(run, filepath):
     # can find the video stream url here in case it changes
     if(run == 'y'):
         print("Hit escape to quit image capture")
-        capture = cv2.VideoCapture("rtsp://192.168.2.2:8554/video_stream__dev_video2")
+        capture = cv2.VideoCapture("rtsp://192.168.2.2:8554/video_udp_stream_0")
         img_counter = 0
 
         while(1):

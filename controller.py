@@ -42,21 +42,21 @@ rov.calibrateDepth()
 #PWM limits 1100-1900
 xtarg = 0
 yTarg = 0
-zTarg = 1500
+zTarg = 0
+vertOut = 0
 
-yawTarget = 90
+yawTarget = 0
 
 fwdPWM = 0
 
 
-x= 0; y= 0; z= 50
+x= 0; y= 0; z= 0
 rot = 0; rvec = 0
-headingTarg = 90
+headingTarg = 0
 rollTarg = 0
 tol = 2
 tf = 100
 t0 = time.monotonic()
-# rov.disarmRobot()
 
 # lastPositions = deque()
 # lastPositions.maxlen = 1000
@@ -64,65 +64,49 @@ t0 = time.monotonic()
 # knownTag = (0 , 0 , 0)
 
 
-xPID = PID.PID(kp=-3e-1, ki=0, kd= -1e-5, target=xtarg, pwm_min=1400, pwm_max=1600)
-yPID = PID.PID(kp=5e-1, ki=0, kd= 0, target=yTarg, pwm_min= 1400, pwm_max=1600)
-zPID = PID.PID(kp=-1e-1, ki= 0, kd= 0, target=zTarg, pwm_min=1400, pwm_max=1600)
-yawPID = PID.PID(kp=1.2, ki= 0, kd= 1.2, target=yawTarget, pwm_min=1400, pwm_max=1600)
+# xPID = PID.PID(kp=-3e-1, ki=0, kd= -1e-5, target=xtarg, pwm_min=1400, pwm_max=1600)
+# yPID = PID.PID(kp=5e-1, ki=0, kd= 0, target=yTarg, pwm_min= 1400, pwm_max=1600)
+zPID = PID.PID(kp=5, ki= 0, kd= 0, target=zTarg, name='zPid')
+# yawPID = PID.PID(kp=1.2, ki= 0, kd= 1.2, target=yawTarget, pwm_min=1400, pwm_max=1600)
 
-pids = [xPID, yPID, zPID, yawPID]
-
-# u = np.empty(shape=1)
-# ref = np.empty(shape=1)
-# times = np.empty(shape=1)
-# pos = np.empty(shape=1)
-
-# def updateArrs(r, p, utx ,t):
-#     ref.append(r)
-#     pos.append(p)
-#     u.append(utx)
-#     times.append(t)
 
 STATUS = 'INIT'
+cam.startStream()
 
 while(1):
-    time.sleep(1)
+    cam.stream.show()
+    pos = cam.getPos()
+    time.sleep(1e-4)
     match(STATUS):
         case 'INIT':
-            cam.startStream()
             rov.armRobot()
             rov.setGain(0.2)
             rov.setMode('MANUAL')
-            rov.lightsOff()
             pos = cam.getPos()
-            if(pos is not None):
-                STATUS = 'APPROACH'
             STATUS = 'SEARCH'
         case 'SEARCH':
-            pos = cam.getPos()
             if(pos is not None):
                 x, y, z, rot, rvec = pos
-                # lastPositions.appendleft(pos[0:2])
-                # knownTag = x, y ,z
-            STATUS = 'APPROACH'
-        case 'APPROACH':
-
-            pos = cam.getPos()
-            if(pos is not None):
-                x, y, z, rot, rvec = pos #this will be in the same units as the marker size in camera class
-                knownTag = x, y ,z
-
-                strafeOut = xPID.update(x)
-                vertOut = yPID.update(y)
-                fwdOut = zPID.update(z)
-
-                angle = np.rad2deg(np.atan2(z, x)) 
-                headingOut = yawPID.update(angle)
-
-            else:
-                for c in pids:
-                    c.scaleDown()
-            rov.turn(headingOut); rov.goVertical(vertOut); rov.goForward(fwdOut);
+                STATUS = 'APPROACH'
             
+        case 'APPROACH':
+            if(pos is not None):
+                tagTime = time.monotonic()
+                x, y, z, rot, rvec = pos #this will be in the same units as the marker size in camera class
+
+                # strafeOut = xPID.update(x)
+                # vertOut = yPID.update(y)
+                print("z val:", z)
+                vertOut = zPID.update(z)
+
+                # angle = np.rad2deg(np.atan2(z, x)) 
+                # headingOut = yawPID.update(angle)
+                rov.goVertical(vertOut)
+            else:
+                if(time.monotonic()-tagTime >= 2):
+                    rov.goVertical(0)
+           
+
             STATUS = STATUS
         case 'ALIGN':
             STATUS = 'ATTACH'
@@ -134,13 +118,3 @@ while(1):
 # print("DisarmingRobot")
 rov.disarmRobot()
 cam.release()
-
-
-
-
-
-# plt.plot(times, ref)
-# plt.plot(u)
-# plt.plot(pos)
-# plt.show()
-

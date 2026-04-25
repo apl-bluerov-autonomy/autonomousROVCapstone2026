@@ -3,37 +3,37 @@ import numpy as np
 
 class PID:
     def __init__(self, kp=0, ki=0, kd=0, target=0.0, tol = 0.1,
-                 pwm_min=1100, pwm_max = 1900, pwm_trim = 100):
+                 min=-200, max = 200, trim = 100, name='noName'):
         self.kp = kp
         self.ki = ki
         self.kd = kd
         self.target = target
         self.tol = tol
-        self.pwm = 1500
+        self.min = min
+        self.max = max
+        self.trim = trim
+        self.offset = 0
+        self.name = name
         
         self.integral = 0.0
         self.prev_error = 0.0
         
         self.prev_time = time.monotonic()
-        self.pwm_min = pwm_min
-        self.pwm_max = pwm_max
-        self.pwm_trim = pwm_trim
-
-        self.integral_lim = 500
+        self.integral_lim = 50
 
     def updateTarget(self, target):
         self.target = target
     
-    def getPWM(self):
-        return int(self.pwm)
+    def getOffset(self):
+        return int(self.offset)
     
-    def scaleDown(self):
-        if(self.pwm > 1500):
-            self.pwm = self.pwm + 10
-        elif(self.pwm < 1500):
-            self.pwm = self.pwm - 10 #def a better way to do this (like dif between self.pwm and 1500 when close to 1500)
-        else:
-            self.pwm = self.pwm
+    # def scaleDown(self):
+    #     if(self.pwm > 1500):
+    #         self.pwm = self.pwm + 10
+    #     elif(self.pwm < 1500):
+    #         self.pwm = self.pwm - 10 #def a better way to do this (like dif between self.pwm and 1500 when close to 1500)
+    #     else:
+    #         self.pwm = self.pwm
 
 
 
@@ -70,24 +70,13 @@ class PID:
             self.ki * self.integral +
             self.kd * derivative
         )
-        
-        self.pwm = 1500 + b
-        delta = 1500 - self.pwm
 
-        # if(np.abs(delta) < 10):
-        #     self.pwm = 1500
-        # if(np.abs(delta) > 10):
-        #     if(delta > 0):
-        #         self.pwm = self.pwm - 20
-        #     else:
-        #         self.pwm = self.pwm + 20
+        self.offset = b
 
-        #Keep it between 1100, 1900
-
-        self.pwm = max(min(self.pwm, self.pwm_max), self.pwm_min)
+        self.offset = max(min(self.offset, self.max), self.min)
 
         # Store for next step
         self.prev_error = error
         # return output
-        print(int(self.pwm))
-        return int(self.pwm)
+        print(self.name, int(self.offset))
+        return int(self.offset)

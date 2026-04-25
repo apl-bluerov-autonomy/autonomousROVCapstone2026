@@ -5,16 +5,48 @@ import numpy as np
 import cv2
 import os
 
+import threading
+import os
+
+class VideoStream:
+    def __init__(self, url):
+        os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
+        self.cap = cv2.VideoCapture(url, cv2.CAP_FFMPEG)
+        self.frame = None
+        self.running = False
+        self.thread = threading.Thread(target=self._capture_loop, daemon=True)
+
+    def start(self):
+        self.running = True
+        self.thread.start()
+
+    def _capture_loop(self):
+        while self.running:
+            ret, frame = self.cap.read()
+            if ret:
+                self.frame = frame
+
+    def show(self):
+        if self.frame is not None:
+            cv2.imshow("BlueOS Stream", self.frame)
+            cv2.waitKey(1)  # 1ms — just enough to render
+
+    def stop(self):
+        self.running = False
+        self.cap.release()
+        cv2.destroyAllWindows()
+
 
 class camera:
     mtx = 0
     dist = 0
-    markerSize = 127 #mm
-    capture = None
+    markerSize = 5 #in
+    stream = None
+    frame = None
     streamOk = False
 
 
-    def __init__(self, markerSize=127):
+    def __init__(self, markerSize=markerSize):
         self.markerSize = markerSize
         print("Creating camera object")
         pass
@@ -23,12 +55,12 @@ class camera:
         self.markerSize = size
 
     def startStream(self):
-        try:
-            self.capture = cv2.VideoCapture("rtsp://192.168.2.2:8554/video_stream__dev_video2")
-            print("Stream found")
-            self.streamOk = True
-        except:
-            self.streamOk = False
+        print("Attempting to open stream")
+        self.stream = VideoStream("rtsp://192.168.2.2:8554/video_udp_stream_0")
+        self.stream.start()
+        self.streamOk = True
+        print("Stream open")
+
 
     def loadCameraSettings(self):
         print("loading settings")
@@ -42,13 +74,13 @@ class camera:
 
     def getImg(self):
         if(self.streamOk):
-            ret, frame = self.capture.read()
+            frame = self.stream.frame
             return frame
         else:
             return None
     
     def release(self):
-        self.capture.release()
+        self.stream.stop()
         cv2.destroyAllWindows()
 
     ##Borrowed from stack overflow
@@ -79,6 +111,8 @@ class camera:
 
 
     def poseEstimate(self, img):
+        if img is None:
+            return None
         rvecCollection = np.empty(0)
         tvecCollection = np.empty(0)
 
@@ -93,10 +127,10 @@ class camera:
             for id in ids:
                 cv2.aruco.drawDetectedMarkers(img, corners, ids)
                 rvec, tvec, _ = self.my_estimatePoseSingleMarkers(corners, self.markerSize)
-                rvecCollection.append(rvec)
-                tvecCollection.append(tvec)
+                rvecCollection = np.append(rvecCollection, rvec)
+                tvecCollection = np.append(tvecCollection, tvec)
                 time.sleep(1e-4) #can get rid of this maybe
-            return np.array(rvecCollection), np.array(rvecCollection), ids
+            return np.array(rvecCollection), np.array(tvecCollection), np.array(ids)
         return None
 
     def rvecToMat(self, rvec):
@@ -113,14 +147,11 @@ class camera:
     def getPos(self):
         img = self.getImg()
         vecs = self.poseEstimate(img)
-        vecs = vecs[0]
         if(vecs is not None):
             rvec, tvec, ids = vecs
-            print('Tag found with id:', ids)
             mat = self.createTransformationMatrix(rvec, tvec)
             x = mat[0][3]; y = mat[1][3]; z = mat[2][3]
             rot = mat[0:2][0:2]
-            # print(mat)
             return x, y, z, rot, rvec #in mm
         else:
             print("No tag detected")

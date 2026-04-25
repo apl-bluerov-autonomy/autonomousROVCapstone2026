@@ -5,25 +5,8 @@ import numpy as np
 import cv2
 
 
-#each RC Channel corresponds to a different DOF
-
-channel = {
-    "pitch": 1,
-    "roll" : 2,
-    "vertical": 3,
-    "yaw": 4,
-    "forward": 5,
-    "lateral": 6, 
-    "pan": 7,
-    "tilt": 8,
-    "lights1": 9,
-    "lights2": 10
-}
-
 def initConnection():
-    protocol = 'tcp'; address = '192.168.2.2'; port = '6777'; connection = f'{protocol}:{address}:{port}'
-
-    #Create connection from topside
+    connection = "udp:0.0.0.0:14550"    #Create connection from topside
     connection = mavutil.mavlink_connection(connection)
 
     #verify connection
@@ -167,68 +150,45 @@ class Robot:
             self.robot.target_component,             # target_component
             *rc_channel_values)  
 
-
     def stopThruster(self):
         for i in range(1, 6):
             self.set_rc_channel_pwm(i, 1500)
 
-    def goForward(self, pwm):
-        id = channel.get("forward")
-        self.set_rc_channel_pwm(id, pwm)
+    def goForward(self, offset):
+        self.set_rc_channel_pwm(1, 1500+offset)
+        self.set_rc_channel_pwm(2, 1500+offset)
+        self.set_rc_channel_pwm(3, 1500-offset)
+        self.set_rc_channel_pwm(4, 1500-offset)
 
-    def goVertical(self, pwm):
-        id = channel.get("vertical")
-        self.set_rc_channel_pwm(id, pwm)
 
-    def turn(self, pwm):
-        id = channel.get("yaw")
-        self.set_rc_channel_pwm(id, pwm)
+    def goVertical(self, offset):
+        self.set_rc_channel_pwm(5, 1500-offset)
+        self.set_rc_channel_pwm(6, 1500-offset)
 
-    def roll(self, pwm):
-        id = channel.get("roll")
-        self.set_rc_channel_pwm(id, pwm)
+    def strafe(self, offset):
+        self.set_rc_channel_pwm(1, 1500+offset)
+        self.set_rc_channel_pwm(2, 1500-offset)
+        self.set_rc_channel_pwm(3, 1500+offset)
+        self.set_rc_channel_pwm(4, 1500-offset)
 
-    def strafe(self, pwm):
-        id = channel.get("lateral")
-        self.set_rc_channel_pwm(id, pwm)
+    def turn(self, offset):
+        self.set_rc_channel_pwm(1, 1500+offset)
+        self.set_rc_channel_pwm(2, 1500-offset)
+        self.set_rc_channel_pwm(3, 1500-offset)
+        self.set_rc_channel_pwm(4, 1500+offset)
 
     ##-----------------CAMERA CONTROL----------------------
     ##-----------------------------------------------------
 
 
-    def tilt2Angle(tilt):
-        print(tilt)
-        tilt = tilt - 0.3
-        return tilt * 100 #deg
+    # def lights(self, pwm):
+    #     id = channel.get("lights1")
+    #     self.set_rc_channel_pwm(id, pwm)
 
-    def getCameraTilt(self):
-        self.robot.mav.command_long_send(
-        self.robot.target_system,
-        self.robot.target_component,
-        mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE,
-        0,
-        251, 0, 0, 0, 0, 0, 0
-    )
-        msg = self.robot.recv_match(type="NAMED_VALUE_FLOAT")
-        if msg:
-            name = msg.name.decode('utf-8') if isinstance(msg.name, bytes) else msg.name
-            value = msg.value
-            if name == 'CamTilt':
-                print(value)
-                return value
-            else: 
-                return self.getCameraTilt()
-        else:
-            return self.getCameraTilt()
+    # def lightsOn(self):
+    #     self.lights(1900)
 
-    def lights(self, pwm):
-        id = channel.get("lights1")
-        self.set_rc_channel_pwm(id, pwm)
-
-    def lightsOn(self):
-        self.lights(1900)
-
-    def lightsOff(self):
-        self.lights(1100)
+    # def lightsOff(self):
+    #     self.lights(1100)
 
 
