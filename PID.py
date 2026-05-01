@@ -14,6 +14,7 @@ class PID:
         self.trim = trim
         self.offset = 0
         self.name = name
+        self.measurement = None
         
         self.integral = 0.0
         self.prev_error = 0.0
@@ -27,15 +28,11 @@ class PID:
     def getOffset(self):
         return int(self.offset)
     
-    # def scaleDown(self):
-    #     if(self.pwm > 1500):
-    #         self.pwm = self.pwm + 10
-    #     elif(self.pwm < 1500):
-    #         self.pwm = self.pwm - 10 #def a better way to do this (like dif between self.pwm and 1500 when close to 1500)
-    #     else:
-    #         self.pwm = self.pwm
-
-
+    def getError(self):
+        return self.target - self.measurement
+    
+    def resetInt(self):
+        self.integral = 0
 
     def updateTol(self, tol):
         self.tol = tol
@@ -51,6 +48,7 @@ class PID:
         current_time = time.monotonic()
         dt = current_time - self.prev_time
         self.prev_time = current_time
+        self.measurement = measurement
 
         if dt <= 0.0:
             return 0.0
@@ -78,5 +76,8 @@ class PID:
         # Store for next step
         self.prev_error = error
         # return output
-        print(self.name, int(self.offset))
+        #print(self.name, int(self.offset))
         return int(self.offset)
+    
+    def print_PID(self):
+        print(self.name, int(self.offset))

@@ -59,7 +59,6 @@ class camera:
         self.stream = VideoStream("rtsp://192.168.2.2:8554/video_udp_stream_0")
         self.stream.start()
         self.streamOk = True
-        print("Stream open")
 
 
     def loadCameraSettings(self):
@@ -81,7 +80,6 @@ class camera:
     
     def release(self):
         self.stream.stop()
-        cv2.destroyAllWindows()
 
     ##Borrowed from stack overflow
     ##https://stackoverflow.com/questions/76802576/how-to-estimate-pose-of-single-marker-in-opencv-python-4-8-0
@@ -129,7 +127,7 @@ class camera:
                 rvec, tvec, _ = self.my_estimatePoseSingleMarkers(corners, self.markerSize)
                 rvecCollection = np.append(rvecCollection, rvec)
                 tvecCollection = np.append(tvecCollection, tvec)
-                time.sleep(1e-4) #can get rid of this maybe
+                # time.sleep(1e-4) #can get rid of this maybe
             return np.array(rvecCollection), np.array(tvecCollection), np.array(ids)
         return None
 
@@ -149,12 +147,14 @@ class camera:
         vecs = self.poseEstimate(img)
         if(vecs is not None):
             rvec, tvec, ids = vecs
+            # print("tag detected with ID:", ids)
+
             mat = self.createTransformationMatrix(rvec, tvec)
             x = mat[0][3]; y = mat[1][3]; z = mat[2][3]
             rot = mat[0:2][0:2]
             return x, y, z, rot, rvec #in mm
         else:
-            print("No tag detected")
+            # print("No tag detected")
             return None
 
 

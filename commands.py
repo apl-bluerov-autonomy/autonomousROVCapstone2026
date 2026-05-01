@@ -75,10 +75,10 @@ class Robot:
         msg = self.robot.recv_match(type='SCALED_PRESSURE2', blocking=True)
         if msg:
             pressure = msg.press_abs
-            print(pressure)
+            # print(pressure)
             depth = (pressure - 1013.25) / 98.0665
-            print(f"Depth: {depth:.3f} m")
-            return
+            # print(f"Depth: {depth:.3f} m")
+            return depth
         else:
             print("No response received")
             return None
@@ -155,15 +155,15 @@ class Robot:
             self.set_rc_channel_pwm(i, 1500)
 
     def goForward(self, offset):
-        self.set_rc_channel_pwm(1, 1500+offset)
-        self.set_rc_channel_pwm(2, 1500+offset)
-        self.set_rc_channel_pwm(3, 1500-offset)
-        self.set_rc_channel_pwm(4, 1500-offset)
+        self.set_rc_channel_pwm(1, 1500-offset)
+        self.set_rc_channel_pwm(2, 1500-offset)
+        self.set_rc_channel_pwm(3, 1500+offset)
+        self.set_rc_channel_pwm(4, 1500+offset)
 
 
     def goVertical(self, offset):
-        self.set_rc_channel_pwm(5, 1500-offset)
-        self.set_rc_channel_pwm(6, 1500-offset)
+        self.set_rc_channel_pwm(5, 1500+offset)
+        self.set_rc_channel_pwm(6, 1500+offset)
 
     def strafe(self, offset):
         self.set_rc_channel_pwm(1, 1500+offset)
