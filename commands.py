@@ -17,6 +17,10 @@ class Robot:
     xVel = 0
     yVel = 0
     zVel = 0
+
+    thrust1, thrust2, thrust3, thrust4 = 1500, 1500, 1500, 1500
+
+
     def __init__(self):
         self.robot = initConnection()
         pass
@@ -29,6 +33,7 @@ class Robot:
         self.robot.arducopter_arm()
         self.robot.motors_armed_wait()
         print("Robot armed")
+    
 
     #STABILIZE, MANUAL, DEPTH HOLD
 
@@ -128,6 +133,13 @@ class Robot:
     ##-----------------MOTION CONTROL----------------------
     ##-----------------------------------------------------
 
+    def disableThrust(self):
+        self.thrust1 = 1500
+        self.thrust2 = 1500
+        self.thrust3 = 1500
+        self.thrust4 = 1500
+        
+
     def set_rc_channel_pwm(self, channel_id, pwm=1500):
         # print("Running at", pwm)
         if(pwm == 0):
@@ -155,51 +167,83 @@ class Robot:
             self.set_rc_channel_pwm(i, 1500)
 
     def goForward(self, offset):
-        self.set_rc_channel_pwm(1, 1500-offset)
-        self.set_rc_channel_pwm(2, 1500-offset)
-        self.set_rc_channel_pwm(3, 1500+offset)
-        self.set_rc_channel_pwm(4, 1500+offset)
+        self.thrust1 = self.thrust1-offset
+        self.thrust2 = self.thrust2-offset
+        self.thrust3 = self.thrust3+offset
+        self.thrust4 = self.thrust4+offset
+        # self.set_rc_channel_pwm(1, 1500-offset)
+        # self.set_rc_channel_pwm(2, 1500-offset)
+        # self.set_rc_channel_pwm(3, 1500+offset)
+        # self.set_rc_channel_pwm(4, 1500+offset)
 
     def goForwardFront(self, offset):
-        self.set_rc_channel_pwm(1, 1500-offset)
-        self.set_rc_channel_pwm(2, 1500-offset)
 
-        self.set_rc_channel_pwm(3, 1500)
-        self.set_rc_channel_pwm(4, 1500)
+        self.thrust1 = self.thrust1-offset
+        self.thrust2 = self.thrust2-offset
+        # self.set_rc_channel_pwm(1, 1500-offset)
+        # self.set_rc_channel_pwm(2, 1500-offset)
+
+        # self.set_rc_channel_pwm(3, 1500)
+        # self.set_rc_channel_pwm(4, 1500)
     
     def goForwardBack(self, offset):
-        self.set_rc_channel_pwm(1, 1500)
-        self.set_rc_channel_pwm(2, 1500)
-        self.set_rc_channel_pwm(3, 1500+offset)
-        self.set_rc_channel_pwm(4, 1500+offset)
+
+        self.thrust3 = self.thrust3+offset
+        self.thrust4 = self.thrust4+offset
+
+
+        # self.set_rc_channel_pwm(1, 1500)
+        # self.set_rc_channel_pwm(2, 1500)
+        # self.set_rc_channel_pwm(3, 1500+offset)
+        # self.set_rc_channel_pwm(4, 1500+offset)
 
     def goVertical(self, offset):
         self.set_rc_channel_pwm(5, 1500+offset)
         self.set_rc_channel_pwm(6, 1500+offset)
 
     def strafe(self, offset):
-        self.set_rc_channel_pwm(1, 1500+offset)
-        self.set_rc_channel_pwm(2, 1500-offset)
-        self.set_rc_channel_pwm(3, 1500+offset)
-        self.set_rc_channel_pwm(4, 1500-offset)
-    
-    def strafeLeft(self, offset):
-        self.set_rc_channel_pwm(1, 1500+offset)
-        self.set_rc_channel_pwm(3, 1500+offset)
-        self.set_rc_channel_pwm(2, 1500)
-        self.set_rc_channel_pwm(4, 1500)
 
-    def strafeRight(self, offset):
-        self.set_rc_channel_pwm(1, 1500)
-        self.set_rc_channel_pwm(3, 1500)
-        self.set_rc_channel_pwm(2, 1500-offset)
-        self.set_rc_channel_pwm(4, 1500-offset)
+        self.thrust1 = self.thrust1+offset
+        self.thrust2 = self.thrust2-offset
+        self.thrust3 = self.thrust3+offset
+        self.thrust4 = self.thrust4-offset
+
+        # self.set_rc_channel_pwm(1, 1500+offset)
+        # self.set_rc_channel_pwm(2, 1500-offset)
+        # self.set_rc_channel_pwm(3, 1500+offset)
+        # self.set_rc_channel_pwm(4, 1500-offset)
+    
+    # def strafeLeft(self, offset):
+    #     self.set_rc_channel_pwm(1, 1500+offset)
+    #     self.set_rc_channel_pwm(3, 1500+offset)
+    #     self.set_rc_channel_pwm(2, 1500)
+    #     self.set_rc_channel_pwm(4, 1500)
+
+    # def strafeRight(self, offset):
+    #     self.set_rc_channel_pwm(1, 1500)
+    #     self.set_rc_channel_pwm(3, 1500)
+    #     self.set_rc_channel_pwm(2, 1500-offset)
+    #     self.set_rc_channel_pwm(4, 1500-offset)
 
     def turn(self, offset):
-        self.set_rc_channel_pwm(1, 1500+offset)
-        self.set_rc_channel_pwm(2, 1500-offset)
-        self.set_rc_channel_pwm(3, 1500-offset)
-        self.set_rc_channel_pwm(4, 1500+offset)
+
+        self.thrust1 = self.thrust1+offset
+        self.thrust2 = self.thrust2-offset
+        self.thrust3 = self.thrust3-offset
+        self.thrust4 = self.thrust4+offset
+
+        # self.set_rc_channel_pwm(1, 1500+offset)
+        # self.set_rc_channel_pwm(2, 1500-offset)
+        # self.set_rc_channel_pwm(3, 1500-offset)
+        # self.set_rc_channel_pwm(4, 1500+offset)
+    
+    def updateThrusts(self):
+        self.set_rc_channel_pwm(1, self.thrust1)
+        self.set_rc_channel_pwm(2, self.thrust2)
+        self.set_rc_channel_pwm(3, self.thrust3)
+        self.set_rc_channel_pwm(4, self.thrust4)
+        
+
 
     ##-----------------LIGHTS CONTROL----------------------
     ##-----------------------------------------------------

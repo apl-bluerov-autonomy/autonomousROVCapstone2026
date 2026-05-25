@@ -84,7 +84,7 @@ while(time.monotonic()-t0 <= timeOut):
     pos = cam.getPos()
     depth = rov.grabDepth()
     print(depth, "Status:", STATUS, vertOut)
-
+    rov.disableThrust()
     match(STATUS):
         case 'INIT':
             rov.armRobot()
@@ -123,6 +123,7 @@ while(time.monotonic()-t0 <= timeOut):
                 fwdOut = 0
                 STATUS = 'SEARCH'
             fwdOut = xPID.update(lastKnownTagInfo[0])
+            strafeOut = yPID.update(lastKnownTagInfo[1])
             # turnOut = turnPID.update(np.rad2deg(np.atan2(y, x)))
             vertOut = zPID.update(depth)
 
@@ -130,6 +131,7 @@ while(time.monotonic()-t0 <= timeOut):
             # print("turnOut", turnOut)
 
             rov.goVertical(vertOut)
+            rov.strafe(strafeOut)
 
             # if(angle > 2 or angle < -2):
             #     print('Turning....')
@@ -153,6 +155,7 @@ while(time.monotonic()-t0 <= timeOut):
         case 'DONE':
             print('done')
             rov.disarmRobot()
+    rov.updateThrusts()
 # print("DisarmingRobot")
 
 cam.release()
