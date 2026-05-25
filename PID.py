@@ -1,5 +1,6 @@
 import time
 import numpy as np
+import matplotlib as plt
 
 class PID:
     def __init__(self, kp=0, ki=0, kd=0, target=0.0, tol = 0.1,
@@ -15,6 +16,8 @@ class PID:
         self.offset = 0
         self.name = name
         self.measurement = None
+        # self.measurements = np.empty(0)
+        # self.times = np.empty(0)
         
         self.integral = 0.0
         self.prev_error = 0.0
@@ -50,6 +53,10 @@ class PID:
         self.prev_time = current_time
         self.measurement = measurement
 
+        # self.measurements = np.append(self.measurements, measurement)
+        # self.times = np.append(self.times, current_time)
+
+
         if dt <= 0.0:
             return 0.0
 
@@ -77,7 +84,12 @@ class PID:
         self.prev_error = error
         # return output
         #print(self.name, int(self.offset))
-        return int(self.offset)
+        if(not self.atTarget(measurement)):
+            return int(self.offset)
     
     def print_PID(self):
         print(self.name, int(self.offset))
+    
+    # def plot_PID(self):
+    #     plt.plot(self.times, self.measurements)
+    #     plt.show()

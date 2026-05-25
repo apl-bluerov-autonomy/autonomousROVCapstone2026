@@ -40,7 +40,7 @@ class VideoStream:
 class camera:
     mtx = 0
     dist = 0
-    markerSize = 5 #in
+    markerSize = 185 #mm
     stream = None
     frame = None
     streamOk = False
@@ -56,7 +56,7 @@ class camera:
 
     def startStream(self):
         print("Attempting to open stream")
-        self.stream = VideoStream("rtsp://192.168.2.2:8554/video_udp_stream_0")
+        self.stream = VideoStream("rtsp://192.168.2.2:8554/video")
         self.stream.start()
         self.streamOk = True
 

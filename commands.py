@@ -160,6 +160,18 @@ class Robot:
         self.set_rc_channel_pwm(3, 1500+offset)
         self.set_rc_channel_pwm(4, 1500+offset)
 
+    def goForwardFront(self, offset):
+        self.set_rc_channel_pwm(1, 1500-offset)
+        self.set_rc_channel_pwm(2, 1500-offset)
+
+        self.set_rc_channel_pwm(3, 1500)
+        self.set_rc_channel_pwm(4, 1500)
+    
+    def goForwardBack(self, offset):
+        self.set_rc_channel_pwm(1, 1500)
+        self.set_rc_channel_pwm(2, 1500)
+        self.set_rc_channel_pwm(3, 1500+offset)
+        self.set_rc_channel_pwm(4, 1500+offset)
 
     def goVertical(self, offset):
         self.set_rc_channel_pwm(5, 1500+offset)
@@ -170,6 +182,18 @@ class Robot:
         self.set_rc_channel_pwm(2, 1500-offset)
         self.set_rc_channel_pwm(3, 1500+offset)
         self.set_rc_channel_pwm(4, 1500-offset)
+    
+    def strafeLeft(self, offset):
+        self.set_rc_channel_pwm(1, 1500+offset)
+        self.set_rc_channel_pwm(3, 1500+offset)
+        self.set_rc_channel_pwm(2, 1500)
+        self.set_rc_channel_pwm(4, 1500)
+
+    def strafeRight(self, offset):
+        self.set_rc_channel_pwm(1, 1500)
+        self.set_rc_channel_pwm(3, 1500)
+        self.set_rc_channel_pwm(2, 1500-offset)
+        self.set_rc_channel_pwm(4, 1500-offset)
 
     def turn(self, offset):
         self.set_rc_channel_pwm(1, 1500+offset)
@@ -177,18 +201,18 @@ class Robot:
         self.set_rc_channel_pwm(3, 1500-offset)
         self.set_rc_channel_pwm(4, 1500+offset)
 
-    ##-----------------CAMERA CONTROL----------------------
+    ##-----------------LIGHTS CONTROL----------------------
     ##-----------------------------------------------------
 
 
-    # def lights(self, pwm):
-    #     id = channel.get("lights1")
-    #     self.set_rc_channel_pwm(id, pwm)
+    def lights(self, pwm):
+        self.set_rc_channel_pwm(9, pwm)
 
-    # def lightsOn(self):
-    #     self.lights(1900)
+    def lightsOn(self):
+        print("Lights on")
+        self.lights(1900)
 
-    # def lightsOff(self):
-    #     self.lights(1100)
+    def lightsOff(self):
+        self.lights(1100)
 
 
