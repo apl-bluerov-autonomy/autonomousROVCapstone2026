@@ -59,7 +59,7 @@ headingTarg = 0
 turnTarg = 0
 tol = 2
 tf = 100
-timeOut = 180
+timeOut = 120
 
 cameraToHookOffset= 65 #mm
 
@@ -67,8 +67,8 @@ cameraToHookOffset= 65 #mm
 
 
 
-xPID = PID.PID(kp=0.1, ki=0, kd= 0.01, target=xtarg, min=-60, max=60, name='xPid', tol=50)
-yPID = PID.PID(kp=0.1, ki=0, kd= 0.01, target=yTarg, min=-60, max=60, name='yPid', tol=50)
+xPID = PID.PID(kp=0.1, ki=0, kd= 0.01, target=xtarg, min=-30, max=30, name='xPid', tol=50)
+yPID = PID.PID(kp=0.1, ki=0, kd= 0.01, target=yTarg, min=-30, max=30, name='yPid', tol=50)
 zPID = PID.PID(kp=40, ki=1, kd=10, target=zTarg, min=-100, max=100, name='zPid', tol=50)
 zPID.updateTarget(depthTarget)
 turnPID = PID.PID(kp=0.01, ki= 0, kd= 0.1, target=turnTarg, min=-30, max = 30, name='turn', tol=10)
@@ -116,13 +116,13 @@ while(time.monotonic()-t0 <= timeOut):
                 tagTracking.captureTag(pos, time.monotonic())
                 angle = np.rad2deg(np.atan2(y,x))
                 # print("angle:", angle)
-                # print(x, y, z)
+                print(x, y, z)
                 fwdOut = xPID.update(x)
                 strafeOut = yPID.update(y)
-            elif(len(tagTracking.tags) > 2):
-                pTag = tagTracking.predictTag(time.monotonic())
-                fwdOut = xPID.update(pTag[0])
-                strafeOut = yPID.update(pTag[1])
+            # elif(len(tagTracking.tags) > 2):
+            #     pTag = tagTracking.predictTag(time.monotonic())
+            #     fwdOut = xPID.update(pTag[0])
+            #     strafeOut = yPID.update(pTag[1])
 
             vertOut = zPID.update(depth)
             # rov.turn(turnOut)
@@ -165,7 +165,7 @@ while(time.monotonic()-t0 <= timeOut):
             print('test case')
             zPID.update(depth)
             rov.goVertical(vertOut)
-            rov.strafe(50)
+            rov.goForward(50)
     rov.updateThrusts()
 # print("DisarmingRobot")
 
