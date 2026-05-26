@@ -6,11 +6,14 @@ import cv2
 
 
 def initConnection():
-    connection = "udp:0.0.0.0:14550"    #Create connection from topside
-    connection = mavutil.mavlink_connection(connection)
+    connection_string = "udp:0.0.0.0:14550"    #Create connection from topside
+    heartbeat_timeout=10
+    connection = mavutil.mavlink_connection(connection_string)
 
     #verify connection
-    connection.wait_heartbeat()
+    hearbeat = connection.wait_heartbeat(timeout=heartbeat_timeout)
+    if hearbeat is None:
+        raise TimeoutError(f"No heartbeat on {connection_string} in {heartbeat_timeout}s")
     return connection
 
 class Robot:
