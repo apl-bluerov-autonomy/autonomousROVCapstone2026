@@ -106,11 +106,11 @@ while(time.monotonic()-t0 <= timeOut):
                 strafeOut = yPID.update(y)
 
                 STATUS = 'APPROACH'
-            else:
-                STATUS = 'SEARCH'
+            # else:
+            #     STATUS = 'SEARCH'
 
         case 'APPROACH':
-            depthTarget = 1
+            depthTarget = 1.0
             if(pos is not None):
                 x, y, z, rot, rvec = pos #this will be in the same units as the marker size in camera class
                 tagTracking.captureTag(pos, time.monotonic())
@@ -119,10 +119,16 @@ while(time.monotonic()-t0 <= timeOut):
                 print(x, y, z)
                 fwdOut = xPID.update(x)
                 strafeOut = yPID.update(y)
-            # elif(len(tagTracking.tags) > 2):
-            #     pTag = tagTracking.predictTag(time.monotonic())
-            #     fwdOut = xPID.update(pTag[0])
-            #     strafeOut = yPID.update(pTag[1])
+            else:
+                predicted = tagTracking.predictTag(time.monotonic())
+                if predicted is not None:
+                    x,y,z = predicted
+                    fwdOut= xPID.update(x)
+                    strafeOut = yPID.update(y)
+                else:
+                    fwdOut = 0
+                    strafeOut = 0
+                    STATUS = 'SEARCH'
 
             vertOut = zPID.update(depth)
             # rov.turn(turnOut)
@@ -132,15 +138,15 @@ while(time.monotonic()-t0 <= timeOut):
             rov.strafe(strafeOut)
 
             if(abs(x) <= 200 and abs(y) <= 200):
-                STATUS = 'APPROACH'
+                STATUS = 'ALIGN'
             STATUS = STATUS
         case 'ALIGN':
             if(pos is not None):
                 x, y, z, rot, rvec = pos #this will be in the same units as the marker size in camera class
+                tagTracking.captureTag(pos, time.monotonic())
                 angle = np.rad2deg(np.atan2(y,x))
                 print("angle:", angle)
                 print(x, y, z)
-
             vertOut = zPID.update(depth)
             fwdOut = xPID.update(x/10)
             strafeOut= yPID.update(y/10)

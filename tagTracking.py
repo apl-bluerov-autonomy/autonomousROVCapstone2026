@@ -16,18 +16,22 @@ class tagSnapShot:
                 self.t = t
                 self.rot = pos[3]
                 self.rvec = pos[4]
-                self.cart = [self.x, self.y, self.z]
+                self.cart = np.array([self.x, self.y, self.z],dtype=float)
                 pass
 
 
 def captureTag(pos, t):
        snap = tagSnapShot(pos, t)
        tags.append(snap)
+       return snap
 
 def predictTag(t):
     if(len(tags) > 2):
           firstTag = tags[-2]
           secondTag = tags[-1]
+          dt = secondTag.t - firstTag.t
+          if dt ==0:
+                return secondTag.cart.copy()
           #thirdTag 
           A = np.vstack([[firstTag.t, secondTag.t], np.ones(2)]).T
         #   print(A)
@@ -35,7 +39,7 @@ def predictTag(t):
           yMat = np.array([firstTag.cart, secondTag.cart])
         #   print(yMat)
 
-          m, _, _, _ = np.linalg.lstsq(A, yMat)
+          m, _, _, _ = np.linalg.lstsq(A, yMat, rcond=None)
         #   print("m", m, '\n')
           pos = m[0] * t + m[1]
           print("predicted tag:", pos, 'last tag:', secondTag.cart)
