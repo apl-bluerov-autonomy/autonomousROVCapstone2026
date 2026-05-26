@@ -120,15 +120,22 @@ class camera:
 
         corners, ids, rejected = detector.detectMarkers(gray)
 
-        if ids is not None:
-            for id in ids:
-                cv2.aruco.drawDetectedMarkers(img, corners, ids)
-                rvec, tvec, _ = self.my_estimatePoseSingleMarkers(corners, self.markerSize)
-                rvecCollection = np.append(rvecCollection, rvec)
-                tvecCollection = np.append(tvecCollection, tvec)
-                # time.sleep(1e-4) #can get rid of this maybe
-            return np.array(rvecCollection), np.array(tvecCollection), np.array(ids)
-        return None
+        if ids is None:
+            return None
+        cv2.aruco.drawDetectedMarkers(img, corners, ids)
+        rvecs, tvecs, _ = self.my_estimatePoseSingleMarkers(corners, self.markerSize) #looks like this actually should work with multiple tags
+        if not rvecs:
+            return None
+        return np.array(rvecs[0]), np.array(tvecs[0]), np.array(ids).flatten()
+        # if ids is not None:
+        #     for id in ids:
+        #         cv2.aruco.drawDetectedMarkers(img, corners, ids)
+        #         rvec, tvec, _ = self.my_estimatePoseSingleMarkers(corners, self.markerSize)
+        #         rvecCollection = np.append(rvecCollection, rvec)
+        #         tvecCollection = np.append(tvecCollection, tvec)
+        #         # time.sleep(1e-4) #can get rid of this maybe
+        #     return np.array(rvecCollection), np.array(tvecCollection), np.array(ids)
+        # return None
 
     def rvecToMat(self, rvec):
         matrix, _ = cv2.Rodrigues(rvec)
