@@ -263,7 +263,7 @@ class Robot:
 class plotter:
     def initPlotter(self,PID):
         self.PID = PID
-        self.name - PID.name
+        self.name =  PID.name
   
 
     def plot_measurements(self,PID):
