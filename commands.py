@@ -3,7 +3,7 @@ from pymavlink import mavutil
 import time
 import numpy as np
 import cv2
-
+import matplotlib.pyplot as plt
 
 def initConnection():
     connection = "udp:0.0.0.0:14550"    #Create connection from topside
@@ -259,4 +259,19 @@ class Robot:
     def lightsOff(self):
         self.lights(1100)
 
+##Plotting PIDs: To be implemented in controller.py
+class plotter:
+    def initPlotter(self,PID):
+        self.PID = PID
+        self.name - PID.name
+  
 
+    def plot_measurements(self,PID):
+        plt.figure()
+        plt.plot(self.PID.times, self.PID.measurements)
+        plt.xlabel("Time")
+        plt.ylabel("Measurement")
+        plt.title(self.name + " Measurements")
+        plt.grid(True)
+        plt.show()
+    
