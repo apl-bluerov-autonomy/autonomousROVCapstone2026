@@ -167,10 +167,10 @@ class Robot:
             self.set_rc_channel_pwm(i, 1500)
 
     def goForward(self, offset):
-        self.thrust1 = self.thrust1-offset
-        self.thrust2 = self.thrust2-offset
-        self.thrust3 = self.thrust3+offset
-        self.thrust4 = self.thrust4+offset
+        self.thrust1 = self.thrust1+offset
+        self.thrust2 = self.thrust2+offset
+        self.thrust3 = self.thrust3-offset
+        self.thrust4 = self.thrust4-offset
         # self.set_rc_channel_pwm(1, 1500-offset)
         # self.set_rc_channel_pwm(2, 1500-offset)
         # self.set_rc_channel_pwm(3, 1500+offset)
@@ -178,8 +178,8 @@ class Robot:
 
     def goForwardFront(self, offset):
 
-        self.thrust1 = self.thrust1-offset
-        self.thrust2 = self.thrust2-offset
+        self.thrust1 = self.thrust1+offset
+        self.thrust2 = self.thrust2+offset
         # self.set_rc_channel_pwm(1, 1500-offset)
         # self.set_rc_channel_pwm(2, 1500-offset)
 
@@ -203,10 +203,10 @@ class Robot:
 
     def strafe(self, offset):
 
-        self.thrust1 = self.thrust1+offset
-        self.thrust2 = self.thrust2-offset
-        self.thrust3 = self.thrust3+offset
-        self.thrust4 = self.thrust4-offset
+        self.thrust1 = self.thrust1-offset
+        self.thrust2 = self.thrust2+offset
+        self.thrust3 = self.thrust3-offset
+        self.thrust4 = self.thrust4+offset
 
         # self.set_rc_channel_pwm(1, 1500+offset)
         # self.set_rc_channel_pwm(2, 1500-offset)

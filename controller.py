@@ -9,7 +9,7 @@ import pylab as plt
 import camera
 import multiprocessing as mp
 import cv2
-from collections import deque
+import tagTracking
 
 print("CV2 version:", cv2.__version__)
  
@@ -25,7 +25,7 @@ mtx = 0
 dist = 0
 
 
-STATUS = {'INIT', 'SEARCH', 'APPROACH', 'ALIGN', 'ATTACH', 'DONE'}
+STATUS = {'INIT', 'SEARCH', 'APPROACH', 'ALIGN', 'ATTACH', 'DONE', 'TEST'}
 
 # message_types = {'ATTITUDE', 'SCALED_IMU2', 'NAMED_VALUE_FLOAT', 'VFR_HUD'}
 
@@ -35,6 +35,8 @@ rov = commands.Robot()
 cam = camera.camera()
 cam.loadCameraSettings()
 rov.calibrateDepth()
+
+tags = []
 
 
 #PWM limits 1100-1900
@@ -57,23 +59,19 @@ headingTarg = 0
 turnTarg = 0
 tol = 2
 tf = 100
-timeOut = 60
+timeOut = 180
 
 cameraToHookOffset= 65 #mm
 
 
-# lastPositions = deque()
-# lastPositions.maxlen = 1000
-
-# knownTag = (0 , 0 , 0)
 
 
 
-xPID = PID.PID(kp=1, ki=0, kd= 0.01, target=xtarg, min=-60, max=60, name='xPid', tol=10)
-yPID = PID.PID(kp=1, ki=0, kd= 0.01, target=yTarg, min=-60, max=60, name='yPid', tol=10)
-zPID = PID.PID(kp=50, ki=1, kd=10, target=zTarg, min=-150, max=150, name='zPid', tol=10)
+xPID = PID.PID(kp=0.1, ki=0, kd= 0.01, target=xtarg, min=-60, max=60, name='xPid', tol=50)
+yPID = PID.PID(kp=0.1, ki=0, kd= 0.01, target=yTarg, min=-60, max=60, name='yPid', tol=50)
+zPID = PID.PID(kp=40, ki=1, kd=10, target=zTarg, min=-100, max=100, name='zPid', tol=50)
 zPID.updateTarget(depthTarget)
-turnPID = PID.PID(kp=0.1, ki= 0, kd= 0.1, target=turnTarg, min=-30, max = 30, name='turn', tol=2)
+turnPID = PID.PID(kp=0.01, ki= 0, kd= 0.1, target=turnTarg, min=-30, max = 30, name='turn', tol=10)
 
 lastKnownTagInfo = [0 ,0 ,0]
 STATUS = 'INIT'
@@ -87,6 +85,7 @@ while(time.monotonic()-t0 <= timeOut):
     rov.disableThrust()
     match(STATUS):
         case 'INIT':
+            
             rov.armRobot()
             rov.lightsOn()
             rov.setGain(0.2)
@@ -98,63 +97,75 @@ while(time.monotonic()-t0 <= timeOut):
             if(depth is not None):
                 vertOut = zPID.update(depth)
             rov.goVertical(vertOut)
-
             if(pos is not None):
                 print('TAG FOUND')
                 x, y, z, rot, rvec = pos
                 angle = np.rad2deg(np.atan2(y,x))
+                tagTracking.captureTag(pos, time.monotonic())
+                fwdOut = xPID.update(x)
+                strafeOut = yPID.update(y)
 
-                lastKnownTagInfo = pos[0:3]
-                tagTime = time.monotonic()
                 STATUS = 'APPROACH'
             else:
                 STATUS = 'SEARCH'
 
         case 'APPROACH':
+            depthTarget = 1
+            if(pos is not None):
+                x, y, z, rot, rvec = pos #this will be in the same units as the marker size in camera class
+                tagTracking.captureTag(pos, time.monotonic())
+                angle = np.rad2deg(np.atan2(y,x))
+                # print("angle:", angle)
+                # print(x, y, z)
+                fwdOut = xPID.update(x)
+                strafeOut = yPID.update(y)
+            elif(len(tagTracking.tags) > 2):
+                pTag = tagTracking.predictTag(time.monotonic())
+                fwdOut = xPID.update(pTag[0])
+                strafeOut = yPID.update(pTag[1])
+
+            vertOut = zPID.update(depth)
+            # rov.turn(turnOut)
+
+            rov.goVertical(vertOut)
+            rov.goForward(fwdOut)
+            rov.strafe(strafeOut)
+
+            if(abs(x) <= 200 and abs(y) <= 200):
+                STATUS = 'APPROACH'
+            STATUS = STATUS
+        case 'ALIGN':
             if(pos is not None):
                 x, y, z, rot, rvec = pos #this will be in the same units as the marker size in camera class
                 angle = np.rad2deg(np.atan2(y,x))
                 print("angle:", angle)
                 print(x, y, z)
-                lastKnownTagInfo = pos[0:2]
-                tagTime = time.monotonic()
-            elif(tagTime - time.monotonic() >= 1.5):
-                strafeOut = 0
-                fwdOut = 0
-                STATUS = 'SEARCH'
-            fwdOut = xPID.update(lastKnownTagInfo[0])
-            strafeOut = yPID.update(lastKnownTagInfo[1])
-            # turnOut = turnPID.update(np.rad2deg(np.atan2(y, x)))
-            vertOut = zPID.update(depth)
 
-            # print("fwd:", fwdOut)
-            # print("turnOut", turnOut)
+            vertOut = zPID.update(depth)
+            fwdOut = xPID.update(x/10)
+            strafeOut= yPID.update(y/10)
+            turnOut = turnPID.update(np.rad2deg(np.atan2(y, x)))
 
             rov.goVertical(vertOut)
+            rov.turn(turnOut)
+            rov.goForwardBack(fwdOut)
             rov.strafe(strafeOut)
-
-            # if(angle > 2 or angle < -2):
-            #     print('Turning....')
-            #     rov.turn(turnOut)
-            #     rov.goForward(0)
-            if(fwdOut > 0):
-                rov.goForwardFront(fwdOut)
-            else:
-                rov.goForwardBack(fwdOut)
-            
-            STATUS = STATUS
-        case 'ALIGN':
-            if(pos is not None):
-                x, y, z, rot, rvec = pos
-                angle = np.atan2(y,x)
-                print("angle", np.rad2deg(angle))
 
             STATUS = 'ALIGN'
         case 'ATTACH':
+            vertOut = zPID.update(depth)
+            rov.goVertical(vertOut)
+            depthTarget = 3
             STATUS = 'ATTACH'
         case 'DONE':
             print('done')
             rov.disarmRobot()
+        
+        case 'TEST':
+            print('test case')
+            zPID.update(depth)
+            rov.goVertical(vertOut)
+            rov.strafe(50)
     rov.updateThrusts()
 # print("DisarmingRobot")
 
