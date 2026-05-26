@@ -17,15 +17,13 @@ def initConnection():
     return connection
 
 class Robot:
-    xVel = 0
-    yVel = 0
-    zVel = 0
-
-    thrust1, thrust2, thrust3, thrust4 = 1500, 1500, 1500, 1500
-
-
     def __init__(self):
         self.robot = initConnection()
+        self.xVel = 0
+        self.yVel = 0
+        self.zVel = 0
+        self.last_velocity_update=time.monotonic()
+        self.thrust1, self.thrust2, self.thrust3, self.thrust4 = 1500, 1500, 1500, 1500
         pass
 
 
@@ -129,8 +127,17 @@ class Robot:
     
     
     def updateVelocities(self):
-        xacc, yacc, zacc = self.grabIMU()
-        self.xVel += xacc; self.yVel += yacc; self.zVel += zacc
+        imu = self.grabIMU()
+
+        xacc, yacc, zacc, *_ = imu
+        now = time.monotonic()
+        dt = now - self.last_velocity_update
+        self.last_velocity_update = now
+        g = 9.80665
+        #looks like SCALED_IMU acceleration is in milli-g
+        self.xVel += (xacc/1000) * g * dt
+        self.yVel += (yacc/1000) * g * dt
+        self.zVel += (zacc/1000) * g * dt
         return self.xVel, self.yVel, self.zVel
 
     ##-----------------MOTION CONTROL----------------------
@@ -141,6 +148,8 @@ class Robot:
         self.thrust2 = 1500
         self.thrust3 = 1500
         self.thrust4 = 1500
+        self.set_rc_channel_pwm(5, 1500)
+        self.set_rc_channel_pwm(6, 1500)
         
 
     def set_rc_channel_pwm(self, channel_id, pwm=1500):
