@@ -5,7 +5,8 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 
-
+PULSE_DEADBAND = 40 #based on t200 spec sheet
+PULSE_PERIOD = 0.25 #need to experiment/tweak probably
 def initConnection():
     connection = "udp:0.0.0.0:14550"    #Create connection from topside
     connection = mavutil.mavlink_connection(connection)
@@ -139,12 +140,29 @@ class Robot:
         self.thrust2 = 1500
         self.thrust3 = 1500
         self.thrust4 = 1500
-        
+    
+    def apply_deadband_pulse(channel_id, pwm):
+        offset = pwm - 1500
+        if(channel_id not in {1,2,3,4,5,6}): #lights or something
+            return pwm
+        if abs(offset) < 5:
+            return 1500
+        if abs(offset) > PULSE_DEADBAND:
+            return pwm
+        duty_cycle = abs(offset) / PULSE_DEADBAND
+        phase = (time.monotonic() % PULSE_PERIOD) / PULSE_PERIOD
+
+        if phase < duty_cycle:
+            pulsed_offset = PULSE_DEADBAND if offset > 0 else -PULSE_DEADBAND
+        else:
+            pulsed_offset = 0
+        return 1500 + pulsed_offset
 
     def set_rc_channel_pwm(self, channel_id, pwm=1500):
         # print("Running at", pwm)
         if(pwm == 0):
             pwm = 1500
+        pwm = self.apply_deadband_pulse(channel_id, pwm)
         """ Set RC channel pwm value
         Args:
             channel_id (TYPE): Channel ID
