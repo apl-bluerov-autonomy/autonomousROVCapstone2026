@@ -8,6 +8,8 @@ import os
 import threading
 import os
 
+
+
 class VideoStream:
     def __init__(self, url):
         os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
@@ -116,6 +118,10 @@ class camera:
 
         dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_APRILTAG_36H11)
         params = cv2.aruco.DetectorParameters()
+        params.adaptiveThreshWinSizeMin = 3
+        params.adaptiveThreshWinSizeMax = 23
+        params.minMarkerPerimeterRate = 0.03
+        
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         detector = cv2.aruco.ArucoDetector(dict, params)
 
