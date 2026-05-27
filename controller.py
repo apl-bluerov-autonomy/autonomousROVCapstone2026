@@ -67,11 +67,18 @@ cameraToHookOffset= 65 #mm
 
 
 
-xPID = PID.PID(kp=0.1, ki=0, kd= 0.01, target=xtarg, min=-30, max=30, name='xPid', tol=50)
-yPID = PID.PID(kp=0.1, ki=0, kd= 0.01, target=yTarg, min=-30, max=30, name='yPid', tol=50)
-zPID = PID.PID(kp=40, ki=1, kd=10, target=zTarg, min=-100, max=100, name='zPid', tol=50)
+xPID = PID.PID(kp=0.1, ki=0, kd= 0.01, target=xtarg, min=-30, max=30, name='xPid', tol=10)
+yPID = PID.PID(kp=0.1, ki=0, kd= 0.01, target=yTarg, min=-30, max=30, name='yPid', tol=10)
+zPID = PID.PID(kp=40, ki=1, kd=10, target=zTarg, min=-100, max=100, name='zPid', tol=0.1)
 zPID.updateTarget(depthTarget)
 turnPID = PID.PID(kp=0.01, ki= 0, kd= 0.1, target=turnTarg, min=-30, max = 30, name='turn', tol=10)
+
+
+def printPIDS():
+    xPID.print_PID()
+    yPID.print_PID()
+    zPID.print_PID()
+    
 
 lastKnownTagInfo = [0 ,0 ,0]
 STATUS = 'INIT'
@@ -81,11 +88,12 @@ while(time.monotonic()-t0 <= timeOut):
     cam.stream.show()
     pos = cam.getPos()
     depth = rov.grabDepth()
-    print(depth, "Status:", STATUS, vertOut)
+    print(depth, "Status:", STATUS)
+    # print(pos)
+    printPIDS()
     rov.disableThrust()
     match(STATUS):
         case 'INIT':
-            
             rov.armRobot()
             rov.lightsOn()
             rov.setGain(0.2)
@@ -93,7 +101,6 @@ while(time.monotonic()-t0 <= timeOut):
             pos = cam.getPos()
             STATUS = 'SEARCH'
         case 'SEARCH':
-            depthTarget = 0.5
             if(depth is not None):
                 vertOut = zPID.update(depth)
             rov.goVertical(vertOut)
@@ -110,19 +117,19 @@ while(time.monotonic()-t0 <= timeOut):
                 STATUS = 'SEARCH'
 
         case 'APPROACH':
-            depthTarget = 1
+            zPID.updateTarget(1)
             if(pos is not None):
                 x, y, z, rot, rvec = pos #this will be in the same units as the marker size in camera class
                 tagTracking.captureTag(pos, time.monotonic())
                 angle = np.rad2deg(np.atan2(y,x))
                 # print("angle:", angle)
-                print(x, y, z)
+                # print(x, y, z)
                 fwdOut = xPID.update(x)
                 strafeOut = yPID.update(y)
-            # elif(len(tagTracking.tags) > 2):
-            #     pTag = tagTracking.predictTag(time.monotonic())
-            #     fwdOut = xPID.update(pTag[0])
-            #     strafeOut = yPID.update(pTag[1])
+            elif(len(tagTracking.tags) > 2):
+                pTag = tagTracking.predictTag(time.monotonic())
+                fwdOut = xPID.update(pTag[0])
+                strafeOut = yPID.update(pTag[1])
 
             vertOut = zPID.update(depth)
             # rov.turn(turnOut)
@@ -132,24 +139,31 @@ while(time.monotonic()-t0 <= timeOut):
             rov.strafe(strafeOut)
 
             if(abs(x) <= 200 and abs(y) <= 200):
-                STATUS = 'APPROACH'
+                STATUS = 'ALIGN'
             STATUS = STATUS
         case 'ALIGN':
             if(pos is not None):
                 x, y, z, rot, rvec = pos #this will be in the same units as the marker size in camera class
                 angle = np.rad2deg(np.atan2(y,x))
-                print("angle:", angle)
-                print(x, y, z)
+                # print("angle:", angle)
+                # print(x, y, z)
 
-            vertOut = zPID.update(depth)
-            fwdOut = xPID.update(x/10)
-            strafeOut= yPID.update(y/10)
-            turnOut = turnPID.update(np.rad2deg(np.atan2(y, x)))
+                vertOut = zPID.update(depth)
+                fwdOut = xPID.update(x/2)
+                strafeOut= yPID.update(y/2)
+                turnOut = turnPID.update(np.rad2deg(np.atan2(y, x)))
+            elif(len(tagTracking.tags) > 2):
+                pTag = tagTracking.predictTag(time.monotonic())
+                fwdOut = xPID.update(pTag[0]/2)
+                # strafeOut = yPID.update(pTag[1]/2)
+                turnOut = turnPID.update(np.rad2deg(np.atan2(pTag[1], pTag[0])))
+
+
 
             rov.goVertical(vertOut)
             rov.turn(turnOut)
             rov.goForwardBack(fwdOut)
-            rov.strafe(strafeOut)
+            # rov.strafe(strafeOut)
 
             STATUS = 'ALIGN'
         case 'ATTACH':

@@ -41,7 +41,7 @@ class PID:
         self.tol = tol
 
     def atTarget(self, measurement):
-        if(measurement  == self.target + self.tol or measurement == self.target - self.tol):
+        if(self.target - self.tol <= measurement <= self.target + self.tol):
             return True
         else:
             return False
@@ -88,6 +88,7 @@ class PID:
             return int(self.offset)
     
     def print_PID(self):
+        print(self.target, self.measurement)
         print(self.name, int(self.offset))
     
     # def plot_PID(self):

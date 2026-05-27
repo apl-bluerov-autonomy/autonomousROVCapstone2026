@@ -167,17 +167,24 @@ class Robot:
             self.set_rc_channel_pwm(i, 1500)
 
     def goForward(self, offset):
-        self.thrust1 = self.thrust1+offset
-        self.thrust2 = self.thrust2+offset
-        self.thrust3 = self.thrust3-offset
-        self.thrust4 = self.thrust4-offset
+        if(offset is None):
+            offset = 0
+        else:
+            offset = offset        
+        self.thrust1 = self.thrust1-offset
+        self.thrust2 = self.thrust2-offset
+        self.thrust3 = self.thrust3+offset
+        self.thrust4 = self.thrust4+offset
         # self.set_rc_channel_pwm(1, 1500-offset)
         # self.set_rc_channel_pwm(2, 1500-offset)
         # self.set_rc_channel_pwm(3, 1500+offset)
         # self.set_rc_channel_pwm(4, 1500+offset)
 
     def goForwardFront(self, offset):
-
+        if(offset is None):
+            offset = 0
+        else:
+            offset = offset        
         self.thrust1 = self.thrust1+offset
         self.thrust2 = self.thrust2+offset
         # self.set_rc_channel_pwm(1, 1500-offset)
@@ -187,7 +194,10 @@ class Robot:
         # self.set_rc_channel_pwm(4, 1500)
     
     def goForwardBack(self, offset):
-
+        if(offset is None):
+            offset = 0
+        else:
+            offset = offset
         self.thrust3 = self.thrust3+offset
         self.thrust4 = self.thrust4+offset
 
@@ -198,10 +208,18 @@ class Robot:
         # self.set_rc_channel_pwm(4, 1500+offset)
 
     def goVertical(self, offset):
+        if(offset is None):
+            offset = 0
+        else:
+            offset = offset
         self.set_rc_channel_pwm(5, 1500+offset)
         self.set_rc_channel_pwm(6, 1500+offset)
 
     def strafe(self, offset):
+        if(offset is None):
+            offset = 0
+        else:
+            offset = offset
 
         self.thrust1 = self.thrust1-offset
         self.thrust2 = self.thrust2+offset
@@ -226,7 +244,10 @@ class Robot:
     #     self.set_rc_channel_pwm(4, 1500-offset)
 
     def turn(self, offset):
-
+        if(offset is None):
+            offset = 0
+        else:
+            offset = offset
         self.thrust1 = self.thrust1+offset
         self.thrust2 = self.thrust2-offset
         self.thrust3 = self.thrust3-offset
