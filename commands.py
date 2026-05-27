@@ -3,6 +3,7 @@ from pymavlink import mavutil
 import time
 import numpy as np
 import cv2
+import matplotlib.pyplot as plt
 
 
 def initConnection():
@@ -248,9 +249,10 @@ class Robot:
             offset = 0
         else:
             offset = offset
+        
         self.thrust1 = self.thrust1+offset
-        self.thrust2 = self.thrust2-offset
-        self.thrust3 = self.thrust3-offset
+        # self.thrust2 = self.thrust2-offset
+        # self.thrust3 = self.thrust3-offset
         self.thrust4 = self.thrust4+offset
 
         # self.set_rc_channel_pwm(1, 1500+offset)
@@ -279,5 +281,18 @@ class Robot:
 
     def lightsOff(self):
         self.lights(1100)
+    
+
+##Plotting PIDs: To be implemented in controller.py
+  
+
+def plot_measurements(PID):
+        plt.plot(PID.times, PID.measurements)
+        plt.xlabel("Time")
+        plt.ylabel("Measurement")
+        plt.title(PID.name + " Measurements")
+        plt.grid(True)
+        plt.show()
+    
 
 

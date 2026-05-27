@@ -16,8 +16,8 @@ class PID:
         self.offset = 0
         self.name = name
         self.measurement = None
-        # self.measurements = np.empty(0)
-        # self.times = np.empty(0)
+        self.measurements = np.empty(0)
+        self.times = np.empty(0)
         
         self.integral = 0.0
         self.prev_error = 0.0
@@ -53,8 +53,8 @@ class PID:
         self.prev_time = current_time
         self.measurement = measurement
 
-        # self.measurements = np.append(self.measurements, measurement)
-        # self.times = np.append(self.times, current_time)
+        self.measurements = np.append(self.measurements, measurement)
+        self.times = np.append(self.times, current_time)
 
 
         if dt <= 0.0:
@@ -82,15 +82,18 @@ class PID:
 
         # Store for next step
         self.prev_error = error
+        return int(self.offset)
+
         # return output
         #print(self.name, int(self.offset))
-        if(not self.atTarget(measurement)):
-            return int(self.offset)
+        # if(not self.atTarget(measurement)):
+        #     return int(self.offset)
     
     def print_PID(self):
         print(self.target, self.measurement)
         print(self.name, int(self.offset))
     
-    # def plot_PID(self):
-    #     plt.plot(self.times, self.measurements)
-    #     plt.show()
+    def plot_PID(self):
+        plt.plot(self.times, self.measurements)
+        plt.show()
+
