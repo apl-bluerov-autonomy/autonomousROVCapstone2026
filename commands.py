@@ -142,6 +142,8 @@ class Robot:
         self.thrust4 = 1500
     
     def apply_deadband_pulse(channel_id, pwm):
+        """if thruster pwm offset is in deadband (set at top of this file, +/- 40 ish), 
+            periodically pulse the thrust going to motors based on duty cycle"""
         offset = pwm - 1500
         if(channel_id not in {1,2,3,4,5,6}): #lights or something
             return pwm
