@@ -67,11 +67,11 @@ cameraToHookOffset= 65 #mm
 
 
 
-xPID = PID.PID(kp=0.1, ki=0, kd= 0.001, target=xtarg, min=-30, max=30, name='xPid', tol=100)
-yPID = PID.PID(kp=0.1, ki=0, kd= 0.001, target=yTarg, min=-30, max=30, name='yPid', tol=100)
+xPID = PID.PID(kp=0.15, ki=0, kd= 0.001, target=xtarg, min=-45, max=45, name='xPid', tol=50)
+yPID = PID.PID(kp=0.15, ki=0, kd= 0.001, target=yTarg, min=-45, max=45, name='yPid', tol=50)
 zPID = PID.PID(kp=100, ki=0.15, kd=0.01, target=zTarg, min=-200, max=60, name='zPid', tol=0.1)
 zPID.updateTarget(depthTarget)
-turnPID = PID.PID(kp=5, ki= 0, kd= 0, target=turnTarg, min=-30, max=30, name='turn', tol=30)
+turnPID = PID.PID(kp=0.1, ki= 0, kd= 0, target=turnTarg, min=-25, max=25, name='turn', tol=30)
 
 
 def printPIDS():
@@ -145,7 +145,7 @@ while(time.monotonic()-t0 <= timeOut):
         case 'ALIGN':
             if(pos is not None):
                 x, y, z, rot, rvec = pos #this will be in the same units as the marker size in camera class
-                angle = min(abs(np.rad2deg(np.atan2(y, x))), abs(360 - np.rad2deg(np.atan2(y,x))))
+                angle = min(abs(np.rad2deg(np.atan2(y, x))), abs(180 - np.rad2deg(np.atan2(y,x))))
 
             elif(len(tagTracking.tags) > 2):
                 pTag = tagTracking.predictTag(time.monotonic())
