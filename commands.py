@@ -5,8 +5,8 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 
-PULSE_DEADBAND = 40 #based on t200 spec sheet
-PULSE_PERIOD = 0.25 #need to experiment/tweak probably
+PULSE_DEADBAND = 35 #based on t200 spec sheet
+PULSE_PERIOD = 0.5 #need to experiment/tweak probably
 def initConnection():
     connection = "udp:0.0.0.0:14550"    #Create connection from topside
     connection = mavutil.mavlink_connection(connection)
@@ -21,11 +21,13 @@ class Robot:
     zVel = 0
 
     thrust1, thrust2, thrust3, thrust4 = 1500, 1500, 1500, 1500
-
+    
 
     def __init__(self):
         self.robot = initConnection()
         pass
+        self.pwmTimes = np.empty(0)
+        self.pwmOutputs = np.empty(0)
 
 
 #BASIC/NECESSARY COMMANDS
@@ -141,30 +143,61 @@ class Robot:
         self.thrust3 = 1500
         self.thrust4 = 1500
     
-    def apply_deadband_pulse(channel_id, pwm):
+    def apply_deadband_pulse(self, channel_id, pwm):
         """if thruster pwm offset is in deadband (set at top of this file, +/- 40 ish), 
             periodically pulse the thrust going to motors based on duty cycle"""
         offset = pwm - 1500
-        if(channel_id not in {1,2,3,4,5,6}): #lights or something
-            return pwm
-        if abs(offset) < 5:
-            return 1500
-        if abs(offset) > PULSE_DEADBAND:
-            return pwm
-        duty_cycle = abs(offset) / PULSE_DEADBAND
+        
+        duty_cycle = max(0.1,abs(offset) / PULSE_DEADBAND)
+        # print(time.monotonic())
         phase = (time.monotonic() % PULSE_PERIOD) / PULSE_PERIOD
 
         if phase < duty_cycle:
-            pulsed_offset = PULSE_DEADBAND if offset > 0 else -PULSE_DEADBAND
+            pulsed_offset = PULSE_DEADBAND if offset > 0 else int(-PULSE_DEADBAND)
         else:
             pulsed_offset = 0
+
+        
+        if(channel_id not in {1,2,3,4,5,6}): #lights or something
+            return pwm
+        if abs(offset) < 2:
+            if(channel_id == 5):
+                self.pwmOutputs = np.append(self.pwmOutputs, 1500)
+                self.pwmTimes = np.append(self.pwmTimes, time.monotonic())
+            return 1500
+        if abs(offset) > PULSE_DEADBAND:
+            if(channel_id == 5):
+                self.pwmOutputs = np.append(self.pwmOutputs, pwm)
+                self.pwmTimes = np.append(self.pwmTimes, time.monotonic())
+            return pwm
+        if(channel_id == 5):
+            self.pwmOutputs = np.append(self.pwmOutputs, 1500 + pulsed_offset)
+            self.pwmTimes = np.append(self.pwmTimes, time.monotonic())
         return 1500 + pulsed_offset
+    
+    # def clampPWM(self, channel_id, pwm):
+    #     offset = pwm - 1500
+    #     if abs(offset) < 1:
+    #         return 1500
+    #     if abs(offset) > PULSE_DEADBAND:
+    #         return pwm
+        
+    #     pwm = 1500+PULSE_DEADBAND if offset > 0 else 1500 - PULSE_DEADBAND
+    #     if(channel_id == 5):
+    #         self.pwmOutputs = np.append(self.pwmOutputs, pwm)
+    #         self.pwmTimes = np.append(self.pwmTimes, time.monotonic())
+    #         print(pwm)
+    #         print(offset)
+    #     return pwm
 
     def set_rc_channel_pwm(self, channel_id, pwm=1500):
         # print("Running at", pwm)
         if(pwm == 0):
             pwm = 1500
+        # print('oldpwmm' + str(pwm))
         pwm = self.apply_deadband_pulse(channel_id, pwm)
+        # pwm = self.clampPWM(channel_id, pwm)
+        # print('newpwm' + str(pwm))
         """ Set RC channel pwm value
         Args:
             channel_id (TYPE): Channel ID
@@ -233,8 +266,14 @@ class Robot:
             offset = 0
         else:
             offset = offset
-        self.set_rc_channel_pwm(5, 1500+offset)
-        self.set_rc_channel_pwm(6, 1500+offset)
+        # self.set_rc_channel_pwm(5, 1500+int(offset * 1))
+        # self.set_rc_channel_pwm(6, 1500+int(offset * 1))
+        if offset > 0:
+            self.set_rc_channel_pwm(5, 1500+int(offset * 1))
+            self.set_rc_channel_pwm(6, 1500+int(offset * 1))
+        else:
+            self.set_rc_channel_pwm(5, 1500+int(offset * 1))
+            self.set_rc_channel_pwm(6, 1500+int(offset * 1))
 
     def strafe(self, offset):
         if(offset is None):
@@ -292,19 +331,25 @@ class Robot:
     ##-----------------------------------------------------
 
 
-    def lights(self, pwm):
-        self.set_rc_channel_pwm(9, pwm)
+    # def lights(self, pwm):
+    #     self.set_rc_channel_pwm(9, pwm)
 
-    def lightsOn(self):
-        print("Lights on")
-        self.lights(1900)
+    # def lightsOn(self):
+    #     print("Lights on")
+    #     self.lights(1900)
 
-    def lightsOff(self):
-        self.lights(1100)
+    # def lightsOff(self):
+    #     self.lights(1100)
     
 
 ##Plotting PIDs: To be implemented in controller.py
-  
+def plot_PWMs(pwmTimes, pwmOutputs):
+        plt.plot(pwmTimes, pwmOutputs)
+        plt.xlabel("Time")
+        plt.ylabel("Measurement")
+        plt.title("Thruster PWMS")
+        plt.grid(True)
+        plt.show()
 
 def plot_measurements(PID):
         plt.plot(PID.times, PID.measurements)

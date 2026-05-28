@@ -59,7 +59,7 @@ headingTarg = 0
 turnTarg = 90
 tol = 2
 tf = 100
-timeOut = 100
+timeOut = 35
 
 cameraToHookOffset= 65 #mm
 
@@ -69,7 +69,7 @@ cameraToHookOffset= 65 #mm
 
 xPID = PID.PID(kp=0.15, ki=0, kd= 0.001, target=xtarg, min=-45, max=45, name='xPid', tol=50)
 yPID = PID.PID(kp=0.15, ki=0, kd= 0.001, target=yTarg, min=-45, max=45, name='yPid', tol=50)
-zPID = PID.PID(kp=100, ki=0.15, kd=0.01, target=zTarg, min=-200, max=60, name='zPid', tol=0.1)
+zPID = PID.PID(kp=70, ki=0, kd=0, target=zTarg, min=-200, max=100, name='zPid', tol=0.1)
 zPID.updateTarget(depthTarget)
 turnPID = PID.PID(kp=0.1, ki= 0, kd= 0, target=turnTarg, min=-25, max=25, name='turn', tol=30)
 
@@ -83,11 +83,11 @@ def printPIDS():
 
 lastKnownTagInfo = [0 ,0 ,0]
 STATUS = 'INIT'
-cam.startStream()
+# cam.startStream()
 t0 = time.monotonic()
 while(time.monotonic()-t0 <= timeOut):
-    cam.stream.show()
-    pos = cam.getPos()
+    # cam.stream.show()
+    # pos = cam.getPos()
     depth = rov.grabDepth()
     print(depth, "Status:", STATUS)
     # print(pos)
@@ -96,11 +96,11 @@ while(time.monotonic()-t0 <= timeOut):
     match(STATUS):
         case 'INIT':
             rov.armRobot()
-            rov.lightsOn()
+            # rov.lightsOn()
             rov.setGain(0.2)
             rov.setMode('MANUAL')
             pos = cam.getPos()
-            STATUS = 'SEARCH'
+            STATUS = 'TEST'
         case 'SEARCH':
             if(depth is not None):
                 vertOut = zPID.update(depth)
@@ -197,16 +197,19 @@ while(time.monotonic()-t0 <= timeOut):
         case 'TEST':
             print('test case')
             vertOut = zPID.update(depth)
-            if(-25 <= vertOut < 25):
-                vertOut = -25
+            # if(-25 <= vertOut < 25):
+            #     vertOut = -25
             rov.goVertical(vertOut)
-            if(time.monotonic()-t0 > 30):
-                zPID.updateTarget(2)
+            # if(time.monotonic()-t0 > 20):
+            #     zPID.updateTarget(0.5)
+            # else:
+            zPID.updateTarget(2)
 
 
     rov.updateThrusts()
-commands.plot_measurements(turnPID)
-commands.plot_measurements(xPID)
+commands.plot_measurements(zPID)
+commands.plot_PWMs(rov.pwmTimes, rov.pwmOutputs)
+# commands.plot_measurements(xPID)
 
 # print("DisarmingRobot")
 cam.release()
