@@ -4,7 +4,7 @@ import matplotlib as plt
 
 class PID:
     def __init__(self, kp=0, ki=0, kd=0, target=0.0, tol = 0.1,
-                 min=-200, max = 200, trim = 100, name='noName'):
+                 min=-200, max = 200, name='noName'):
         self.kp = kp
         self.ki = ki
         self.kd = kd
@@ -12,7 +12,6 @@ class PID:
         self.tol = tol
         self.min = min
         self.max = max
-        self.trim = trim
         self.offset = 0
         self.name = name
         self.measurement = None

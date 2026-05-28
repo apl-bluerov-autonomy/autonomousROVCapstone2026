@@ -5,8 +5,8 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 
-PULSE_DEADBAND = 35 #based on t200 spec sheet
-PULSE_PERIOD = 0.5 #need to experiment/tweak probably
+PULSE_DEADBAND = 50 #based on t200 spec sheet
+PULSE_PERIOD = 1 #need to experiment/tweak probably
 def initConnection():
     connection = "udp:0.0.0.0:14550"    #Create connection from topside
     connection = mavutil.mavlink_connection(connection)
@@ -107,7 +107,7 @@ class Robot:
             xacc = msg.xacc; yacc= msg.yacc; zacc = msg.zacc
             xgryo = msg.xgyro; ygryo = msg.ygyro; zgyro = msg.zgyro
             # xmag = msg.xmag; ymag = msg.ymag; zmag= msg.zmag
-            return xacc, yacc, zacc, xgryo, ygryo, zgyro
+            return [xacc, yacc, zacc, xgryo, ygryo, zgyro]
         else:
             print("No response received")
             return None
@@ -161,18 +161,15 @@ class Robot:
         if(channel_id not in {1,2,3,4,5,6}): #lights or something
             return pwm
         if abs(offset) < 2:
-            if(channel_id == 5):
-                self.pwmOutputs = np.append(self.pwmOutputs, 1500)
-                self.pwmTimes = np.append(self.pwmTimes, time.monotonic())
+            # if(channel_id == 5):
+            #     self.pwmOutputs = np.append(self.pwmOutputs, 1500)
+            #     self.pwmTimes = np.append(self.pwmTimes, time.monotonic())
             return 1500
         if abs(offset) > PULSE_DEADBAND:
-            if(channel_id == 5):
-                self.pwmOutputs = np.append(self.pwmOutputs, pwm)
-                self.pwmTimes = np.append(self.pwmTimes, time.monotonic())
+            # if(channel_id == 5):
+            #     self.pwmOutputs = np.append(self.pwmOutputs, pwm)
+            #     self.pwmTimes = np.append(self.pwmTimes, time.monotonic())
             return pwm
-        if(channel_id == 5):
-            self.pwmOutputs = np.append(self.pwmOutputs, 1500 + pulsed_offset)
-            self.pwmTimes = np.append(self.pwmTimes, time.monotonic())
         return 1500 + pulsed_offset
     
     # def clampPWM(self, channel_id, pwm):

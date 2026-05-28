@@ -41,7 +41,7 @@ tags = []
 
 #PWM limits 1100-1900
 xtarg = 0
-yTarg = 200
+yTarg = 0
 zTarg = 0
 depthTarget = 0.5 #meter
 tagTime = 0
@@ -56,22 +56,18 @@ fwdPWM = 0
 x= 0; y= 0; # tolerance 50mm
 rot = 0; rvec = 0
 headingTarg = 0
-turnTarg = 90
+turnTarg = 0
 tol = 2
 tf = 100
-timeOut = 35
-
-cameraToHookOffset= 65 #mm
+timeOut = 30
 
 
 
-
-
-xPID = PID.PID(kp=0.15, ki=0, kd= 0.001, target=xtarg, min=-45, max=45, name='xPid', tol=50)
-yPID = PID.PID(kp=0.15, ki=0, kd= 0.001, target=yTarg, min=-45, max=45, name='yPid', tol=50)
-zPID = PID.PID(kp=70, ki=0, kd=0, target=zTarg, min=-200, max=100, name='zPid', tol=0.1)
+xPID = PID.PID(kp=0.15, ki=0, kd= 0.001, target=xtarg, min=-60, max=60, name='xPid', tol=50)
+yPID = PID.PID(kp=0.15, ki=0, kd= 0.001, target=yTarg, min=-60, max=60, name='yPid', tol=50)
+zPID = PID.PID(kp=60, ki=0, kd=0, target=zTarg, min=-200, max=100, name='zPid', tol=0.1)
 zPID.updateTarget(depthTarget)
-turnPID = PID.PID(kp=0.1, ki= 0, kd= 0, target=turnTarg, min=-25, max=25, name='turn', tol=30)
+turnPID = PID.PID(kp=0.1, ki= 0, kd= 0, target=turnTarg, min=-60, max=60, name='turn', tol=30)
 
 
 def printPIDS():
@@ -80,19 +76,18 @@ def printPIDS():
     zPID.print_PID()
     turnPID.print_PID()
     
-
-lastKnownTagInfo = [0 ,0 ,0]
 STATUS = 'INIT'
-# cam.startStream()
+cam.startStream()
 t0 = time.monotonic()
 while(time.monotonic()-t0 <= timeOut):
-    # cam.stream.show()
-    # pos = cam.getPos()
+    cam.stream.show()
+    pos = cam.getPos()
     depth = rov.grabDepth()
     print(depth, "Status:", STATUS)
     # print(pos)
     printPIDS()
     rov.disableThrust()
+    IMU = rov.grabIMU()
     match(STATUS):
         case 'INIT':
             rov.armRobot()
@@ -100,7 +95,7 @@ while(time.monotonic()-t0 <= timeOut):
             rov.setGain(0.2)
             rov.setMode('MANUAL')
             pos = cam.getPos()
-            STATUS = 'TEST'
+            STATUS = 'SEARCH'
         case 'SEARCH':
             if(depth is not None):
                 vertOut = zPID.update(depth)
@@ -121,28 +116,29 @@ while(time.monotonic()-t0 <= timeOut):
             if(pos is not None):
                 x, y, z, rot, rvec = pos #this will be in the same units as the marker size in camera class
                 tagTracking.captureTag(pos, time.monotonic())
-                angle = np.rad2deg(np.atan2(y,x))
 
             elif(len(tagTracking.tags) > 2):
                 pTag = tagTracking.predictTag(time.monotonic())
                 x = pTag[0]
                 y = pTag[1]
+            angle = np.rad2deg(np.atan2(y,x))
 
             fwdOut = xPID.update(x)
             strafeOut = yPID.update(y)
             vertOut = zPID.update(depth)
-            # rov.turn(turnOut)
+            turnOut = turnPID.update(angle)
 
+            rov.turn(turnOut)
             rov.goVertical(vertOut)
             rov.goForward(fwdOut)
-            rov.strafe(strafeOut)
+            # rov.strafe(strafeOut)
 
             if(xPID.atTarget(x)):
                 STATUS = 'ALIGN'
-
             
             STATUS = STATUS
         case 'ALIGN':
+            zPID.updateTarget(2)
             if(pos is not None):
                 x, y, z, rot, rvec = pos #this will be in the same units as the marker size in camera class
                 angle = min(abs(np.rad2deg(np.atan2(y, x))), abs(180 - np.rad2deg(np.atan2(y,x))))
@@ -153,21 +149,22 @@ while(time.monotonic()-t0 <= timeOut):
                 y= pTag[1]
                 angle = min(abs(np.rad2deg(np.atan2(y, x))), abs(180 - np.rad2deg(np.atan2(y,x))))
             
-
             vertOut = zPID.update(depth)
             fwdOut = xPID.update(x)
             strafeOut= yPID.update(y)
-            turnOut = turnPID.update(angle)
+            turnOut = turnPID.update(IMU[5])
 
             rov.goVertical(vertOut)
-
             rov.goForward(fwdOut)
-            # rov.turn(turnOut)
+            rov.strafe(strafeOut)
+            rov.turn(turnOut)
 
-            if(yPID.atTarget(y) and xPID.atTarget(x)):
+            if(turnPID.atTarget(angle) and xPID.atTarget(x)):
                 STATUS = 'ATTACH'
             STATUS = STATUS
         case 'ATTACH':
+            zPID.updateTarget(3)
+
             if(pos is not None):
                 x, y, z, rot, rvec = pos #this will be in the same units as the marker size in camera class
                 tagTracking.captureTag(pos, time.monotonic())
@@ -179,11 +176,12 @@ while(time.monotonic()-t0 <= timeOut):
             vertOut = zPID.update(depth)
             fwdOut = xPID.update(x)
             strafeOut= yPID.update(y)
-
-            zPID.updateTarget(3)
+            turnOut = turnPID.update(IMU[5])
+            
             rov.goVertical(vertOut)
             rov.goForward(fwdOut)
             rov.strafe(strafeOut)
+            rov.turn(turnOut)
 
             if(zPID.atTarget(depth)):
                 STATUS = 'DONE'
@@ -192,28 +190,35 @@ while(time.monotonic()-t0 <= timeOut):
             STATUS = STATUS
         case 'DONE':
             print('done')
-            rov.disarmRobot()
+            # rov.disarmRobot()
+            break
         
         case 'TEST':
             print('test case')
             vertOut = zPID.update(depth)
-            # if(-25 <= vertOut < 25):
-            #     vertOut = -25
+            turnOut = turnPID.update(IMU[5])
+            print(IMU[5])
+
             rov.goVertical(vertOut)
-            # if(time.monotonic()-t0 > 20):
-            #     zPID.updateTarget(0.5)
-            # else:
-            zPID.updateTarget(2)
+            rov.turn(turnOut)
+            if(time.monotonic()-t0 > 20):
+                turnPID.updateTarget(0)
+                print('hi')
+            STATUS = STATUS
+            
+
 
 
     rov.updateThrusts()
-commands.plot_measurements(zPID)
-commands.plot_PWMs(rov.pwmTimes, rov.pwmOutputs)
+commands.plot_measurements(xPID)
+commands.plot_measurements(yPID)
+
+# commands.plot_PWMs(rov.pwmTimes, rov.pwmOutputs)
 # commands.plot_measurements(xPID)
 
 # print("DisarmingRobot")
 cam.release()
-rov.lightsOff()
+# rov.lightsOff()
 rov.disarmRobot()
 
 
